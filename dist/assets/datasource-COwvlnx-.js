@@ -1,0 +1,1 @@
+import{y as t}from"./index-DDATQjXO.js";const e=()=>t.get("/datasource/list"),o=s=>t.post("/datasource",s),r=s=>t.put("/datasource",s),c=s=>t.delete(`/datasource/${s}`),u=s=>t.post(`/datasource/test/${s}`);export{e as l,c as r,o as s,u as t,r as u};
