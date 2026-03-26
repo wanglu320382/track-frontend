@@ -78,7 +78,7 @@ const form = ref<Partial<SysUser> & { password?: string }>({
   nickname: '',
   role: 'ADMIN',
   status: 1,
-  password: '',
+  password: undefined,
 })
 
 const rules: FormRules = {
@@ -89,7 +89,7 @@ const rules: FormRules = {
       required: () => !isEdit.value,
       message: '请输入密码',
       trigger: 'blur',
-    } as any,
+    } as unknown as import('async-validator').RuleItem,
   ],
 }
 
@@ -105,7 +105,7 @@ const loadList = async () => {
 
 const handleAdd = () => {
   isEdit.value = false
-  form.value = { username: '', nickname: '', role: 'ADMIN', status: 1, password: '' }
+  form.value = { username: '', nickname: '', role: 'ADMIN', status: 1, password: undefined }
   dialogVisible.value = true
 }
 
@@ -127,6 +127,10 @@ const handleSubmit = async () => {
       })
       ElMessage.success('更新成功')
     } else {
+      if (!form.value.password) {
+        ElMessage.warning('请输入密码')
+        return
+      }
       await createUser({
         username: form.value.username as string,
         password: form.value.password as string,
@@ -138,8 +142,9 @@ const handleSubmit = async () => {
     }
     dialogVisible.value = false
     loadList()
-  } catch (e: any) {
-    ElMessage.error(e?.message || '操作失败')
+  } catch (e: unknown) {
+    const msg = (e as Error)?.message || '操作失败'
+    ElMessage.error(msg)
   }
 }
 
@@ -153,8 +158,9 @@ const handleResetPassword = async (row: SysUser) => {
   try {
     await resetPassword(row.id!, value)
     ElMessage.success('密码已重置')
-  } catch (e: any) {
-    ElMessage.error(e?.message || '重置失败')
+  } catch (e: unknown) {
+    const msg = (e as Error)?.message || '重置失败'
+    ElMessage.error(msg)
   }
 }
 
@@ -164,8 +170,9 @@ const handleDelete = async (row: SysUser) => {
     await deleteUser(row.id!)
     ElMessage.success('删除成功')
     loadList()
-  } catch (e: any) {
-    ElMessage.error(e?.message || '删除失败')
+  } catch (e: unknown) {
+    const msg = (e as Error)?.message || '删除失败'
+    ElMessage.error(msg)
   }
 }
 

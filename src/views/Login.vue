@@ -50,7 +50,7 @@ const loading = ref(false)
 const captchaAnswer = ref('')
 const form = ref({
   username: '',
-  password: '',
+  password: undefined as string | undefined,
   captcha: '',
 })
 
@@ -121,15 +121,16 @@ const handleLogin = async () => {
   try {
     const res = await login({
       username: form.value.username,
-      password: form.value.password,
+      password: form.value.password ?? '',
     })
     const data = res.data
     localStorage.setItem('auth_token', data.token)
     localStorage.setItem('auth_user', JSON.stringify(data))
     ElMessage.success('登录成功')
     router.push('/')
-  } catch (e: any) {
-    ElMessage.error(e?.message || '登录失败')
+  } catch (e: unknown) {
+    const msg = (e as Error)?.message || '登录失败'
+    ElMessage.error(msg)
     refreshCaptcha()
   } finally {
     loading.value = false

@@ -11,19 +11,19 @@ export interface QueryResult {
   size: number
 }
 
-export interface ExecuteSqlParams {
-  sql?: string
-  encryptedSql?: string
+export interface ExecuteStatParams {
+  stat?: string
+  encryptedStat?: string
   schema?: string
   page?: number
   size?: number
 }
 
-export const executeSql = (datasourceId: number, params: ExecuteSqlParams) =>
-  request.post<{ data: QueryResult }>(`/query/sql/${datasourceId}`, params)
+export const executeStat = (datasourceId: number, params: ExecuteStatParams) =>
+  request.post<{ data: QueryResult }>(`/query/stat/${datasourceId}`, params)
 
-export const queryTable = (datasourceId: number, params: { tableName: string; schema?: string; where?: string; page?: number; size?: number }) =>
-  request.get<{ data: QueryResult }>(`/query/table/${datasourceId}`, { params })
+export const queryObject = (datasourceId: number, params: { objectName: string; schema?: string; where?: string; page?: number; size?: number }) =>
+  request.get<{ data: QueryResult }>(`/query/object/${datasourceId}`, { params })
 
 export const getRedisValue = (datasourceId: number, key: string) =>
   request.get<{ data: unknown }>(`/query/redis/${datasourceId}`, { params: { key } })

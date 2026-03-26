@@ -25,9 +25,9 @@
           <el-icon><Search /></el-icon>
           <span>数据查询</span>
         </el-menu-item>
-        <el-menu-item index="/common-sql">
+        <el-menu-item index="/common-stat">
           <el-icon><Document /></el-icon>
-          <span>常用 SQL 管理</span>
+          <span>常用查询管理</span>
         </el-menu-item>
         <el-menu-item v-if="currentUserRole === 'ADMIN'" index="/users">
           <el-icon><User /></el-icon>
@@ -55,7 +55,7 @@
 </template>
 
 <script setup lang="ts">
-import { computed } from 'vue'
+import { computed, onMounted } from 'vue'
 import { useRoute, useRouter } from 'vue-router'
 import { ElMessage } from 'element-plus'
 import { House, Connection, Document, Search, User } from '@element-plus/icons-vue'
@@ -64,27 +64,37 @@ const route = useRoute()
 const router = useRouter()
 const routeMeta = computed(() => route.meta)
 
-const currentUserName = computed(() => {
+type UserRole = 'ADMIN' | 'USER'
+
+interface AuthUser {
+  nickname?: string
+  username?: string
+  role?: UserRole
+}
+
+const VALID_ROLES: ReadonlySet<UserRole> = new Set(['ADMIN', 'USER'])
+
+const getStoredAuthUser = (): AuthUser | null => {
   const userStr = localStorage.getItem('auth_user')
-  if (!userStr) return ''
+  if (!userStr) return null
   try {
-    const user = JSON.parse(userStr) as { nickname?: string; username?: string }
-    return user.nickname || user.username || ''
+    const rawUser = JSON.parse(userStr) as Partial<AuthUser>
+    if (!rawUser || typeof rawUser !== 'object') return null
+    const role = typeof rawUser.role === 'string' && VALID_ROLES.has(rawUser.role as UserRole) ? (rawUser.role as UserRole) : undefined
+    const nickname = typeof rawUser.nickname === 'string' ? rawUser.nickname : undefined
+    const username = typeof rawUser.username === 'string' ? rawUser.username : undefined
+    return { nickname, username, role }
   } catch {
-    return ''
+    return null
   }
+}
+
+const currentUserName = computed(() => {
+  const user = getStoredAuthUser()
+  return user?.nickname || user?.username || ''
 })
 
-const currentUserRole = computed(() => {
-  const userStr = localStorage.getItem('auth_user')
-  if (!userStr) return ''
-  try {
-    const user = JSON.parse(userStr) as { role?: string }
-    return user.role || ''
-  } catch {
-    return ''
-  }
-})
+const currentUserRole = computed(() => getStoredAuthUser()?.role || '')
 
 const handleLogout = () => {
   localStorage.removeItem('auth_token')
@@ -92,6 +102,16 @@ const handleLogout = () => {
   ElMessage.success('已退出登录')
   router.push('/login')
 }
+
+onMounted(() => {
+  const token = localStorage.getItem('auth_token')
+  const user = getStoredAuthUser()
+  if (!token || !user?.role) {
+    localStorage.removeItem('auth_token')
+    localStorage.removeItem('auth_user')
+    router.replace('/login')
+  }
+})
 </script>
 
 <style scoped>

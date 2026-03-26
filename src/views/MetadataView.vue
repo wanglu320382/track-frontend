@@ -12,15 +12,15 @@
       <div class="metadata-content" v-loading="loading">
         <div class="tree-panel" v-if="datasourceId">
           <div class="schema-select" v-if="schemas.length">
-            <el-select v-model="currentSchema" placeholder="选择库/Schema" filterable style="width: 100%" @change="loadTables">
+            <el-select v-model="currentSchema" placeholder="选择库/Schema" filterable style="width: 100%" @change="loadObjects">
               <el-option v-for="s in schemas" :key="s" :label="s" :value="s" />
             </el-select>
           </div>
-          <div class="table-list-header">
+          <div class="object-list-header">
             <span>表列表</span>
             <el-input
               v-if="!isRedis"
-              v-model="tableFilter"
+              v-model="objectFilter"
               placeholder="按表名或注释模糊搜索"
               clearable
               size="small"
@@ -31,19 +31,18 @@
               </template>
             </el-input>
           </div>
-          <div class="table-list">
-            <div v-for="t in filteredTables" :key="t.name" class="table-item" :class="{ active: selectedTable === t.name }" @click="selectTable(t)">
-              <span class="table-name">{{ t.name }}</span>
+          <div class="object-list">
+            <div v-for="t in filteredObjects" :key="t.name" class="object-item" :class="{ active: selectedObject === t.name }" @click="selectObject(t)">
+              <span class="object-name">{{ t.name }}</span>
               <span v-if="t.comment" class="comment">{{ t.comment }}</span>
             </div>
           </div>
         </div>
         <div class="detail-panel">
-          <!-- 表结构：字段名、类型、注释 -->
           <template v-if="columns.length">
             <div class="detail-header">
-              <span class="table-title">{{ selectedTable }} 表结构</span>
-              <el-button type="primary" size="small" @click="goViewTableData">查看数据</el-button>
+              <span class="object-title">{{ selectedObject }} 表结构</span>
+              <el-button type="primary" size="small" @click="goViewData">查看数据</el-button>
             </div>
             <el-table :data="columns" stripe border>
               <el-table-column prop="columnName" label="字段名" width="160" />
@@ -55,10 +54,9 @@
               </el-table-column>
             </el-table>
           </template>
-          <!-- Redis Keys 列表 -->
-          <template v-else-if="selectedTable === 'keys'">
+          <template v-else-if="selectedObject === 'keys'">
             <div class="detail-header redis-header">
-              <span class="table-title">Redis Key 列表</span>
+              <span class="object-title">Redis Key 列表</span>
               <div class="redis-toolbar">
                 <el-input v-model="redisKeyPattern" placeholder="支持模糊，如 config:api:rate_lim 可匹配 rate_limit" clearable style="width: 220px" @keyup.enter="loadRedisKeys" />
                 <el-button type="primary" @click="loadRedisKeys" :loading="loadingRedisKeys">刷新</el-button>
@@ -79,7 +77,6 @@
       </div>
     </el-card>
 
-    <!-- Redis Key 详情弹窗 -->
     <el-dialog v-model="redisKeyDialogVisible" :title="`Key: ${redisKeyViewing}`" width="560px">
       <el-descriptions v-if="redisKeyDetail" :column="1" border>
         <el-descriptions-item label="类型">{{ redisKeyDetail.type }}</el-descriptions-item>
@@ -95,19 +92,20 @@
 import { ref, watch, computed } from 'vue'
 import { useRouter } from 'vue-router'
 import { ElMessage } from 'element-plus'
+import { Search } from '@element-plus/icons-vue'
 import { listDatasources } from '@/api/datasource'
-import { getSchemas, getTables, getColumns, getRedisKeys, getRedisKeyInfo } from '@/api/metadata'
+import { getSchemas, getObjects, getColumns, getRedisKeys, getRedisKeyInfo } from '@/api/metadata'
 import type { DatasourceConfig } from '@/types/datasource'
 
 const datasources = ref<DatasourceConfig[]>([])
 const datasourceId = ref<number | null>(null)
 const schemas = ref<string[]>([])
 const currentSchema = ref<string>('')
-const tables = ref<{ name: string; comment: string }[]>([])
-const selectedTable = ref<string>('')
+const objects = ref<{ name: string; comment: string }[]>([])
+const selectedObject = ref<string>('')
 const columns = ref<Record<string, unknown>[]>([])
 const loading = ref(false)
-const tableFilter = ref('')
+const objectFilter = ref('')
 const redisKeys = ref<{ key: string }[]>([])
 const redisKeyPattern = ref('*')
 const loadingRedisKeys = ref(false)
@@ -120,10 +118,10 @@ const isRedis = computed(() => {
   return ds?.type === 'REDIS'
 })
 
-const filteredTables = computed(() => {
-  const kw = tableFilter.value?.trim().toLowerCase()
-  if (!kw) return tables.value
-  return tables.value.filter(
+const filteredObjects = computed(() => {
+  const kw = objectFilter.value?.trim().toLowerCase()
+  if (!kw) return objects.value
+  return objects.value.filter(
     (t) =>
       t.name.toLowerCase().includes(kw) ||
       (t.comment && String(t.comment).toLowerCase().includes(kw))
@@ -141,8 +139,8 @@ const loadDatasources = async () => {
 const onDatasourceChange = () => {
   currentSchema.value = ''
   schemas.value = []
-  tables.value = []
-  selectedTable.value = ''
+  objects.value = []
+  selectedObject.value = ''
   columns.value = []
   redisKeys.value = []
   redisKeyPattern.value = '*'
@@ -157,9 +155,9 @@ const loadSchemas = async () => {
     schemas.value = res.data || []
     if (schemas.value.length) {
       currentSchema.value = schemas.value[0]
-      await loadTables()
+      await loadObjects()
     } else {
-      tables.value = [{ name: 'keys', comment: 'Redis Keys' }]
+      objects.value = [{ name: 'keys', comment: 'Redis Keys' }]
     }
   } catch (e: unknown) {
     ElMessage.error((e as Error)?.message || '加载失败')
@@ -168,16 +166,16 @@ const loadSchemas = async () => {
   }
 }
 
-const loadTables = async () => {
+const loadObjects = async () => {
   if (!datasourceId.value) return
   loading.value = true
   try {
-    const res = await getTables(datasourceId.value, currentSchema.value)
-    tables.value = (res.data || []).map((t: { name?: string; comment?: string }) => ({
+    const res = await getObjects(datasourceId.value, currentSchema.value)
+    objects.value = (res.data || []).map((t: { name?: string; comment?: string }) => ({
       name: t.name || '',
       comment: t.comment || ''
     }))
-    selectedTable.value = ''
+    selectedObject.value = ''
     columns.value = []
   } catch (e: unknown) {
     ElMessage.error((e as Error)?.message || '加载失败')
@@ -186,8 +184,8 @@ const loadTables = async () => {
   }
 }
 
-const selectTable = async (t: { name: string }) => {
-  selectedTable.value = t.name
+const selectObject = async (t: { name: string }) => {
+  selectedObject.value = t.name
   columns.value = []
   if (t.name === 'keys') {
     await loadRedisKeys()
@@ -209,7 +207,6 @@ const loadRedisKeys = async () => {
   if (!datasourceId.value) return
   loadingRedisKeys.value = true
   try {
-    // Redis 模糊查询：若用户输入不含 * 或 ?，自动追加 * 做前缀匹配（如 config:api:rate_lim 可匹配 config:api:rate_limit）
     let pattern = redisKeyPattern.value?.trim() || '*'
     if (pattern !== '*' && !pattern.includes('*') && !pattern.includes('?')) {
       pattern = pattern + '*'
@@ -244,9 +241,8 @@ const formatRedisValue = (val: unknown): string => {
 }
 
 const router = useRouter()
-/** 跳转到数据查询画面，并带上当前数据源、库、表，自动展示表数据 */
-const goViewTableData = () => {
-  if (!datasourceId.value || !selectedTable.value) {
+const goViewData = () => {
+  if (!datasourceId.value || !selectedObject.value) {
     ElMessage.warning('请先选择数据源和表')
     return
   }
@@ -255,7 +251,7 @@ const goViewTableData = () => {
     query: {
       datasourceId: String(datasourceId.value),
       schema: currentSchema.value || '',
-      table: selectedTable.value
+      object: selectedObject.value
     }
   })
   window.open(route.href, '_blank')
@@ -290,34 +286,34 @@ loadDatasources()
 .schema-select {
   margin-bottom: 12px;
 }
-.table-list-header {
+.object-list-header {
   font-size: 13px;
   color: var(--el-text-color-regular);
   margin-bottom: 8px;
   padding-left: 0;
   margin-left: 0;
 }
-.table-list-header :deep(.el-input) {
+.object-list-header :deep(.el-input) {
   margin-left: 0;
 }
-.table-list {
+.object-list {
   max-height: 340px;
   overflow-y: auto;
 }
-.table-item {
+.object-item {
   padding: 8px 10px;
   cursor: pointer;
   border-radius: 4px;
   line-height: 1.4;
 }
-.table-item:hover,
-.table-item.active {
+.object-item:hover,
+.object-item.active {
   background: var(--el-fill-color-light);
 }
-.table-item .table-name {
+.object-item .object-name {
   font-weight: 500;
 }
-.table-item .comment {
+.object-item .comment {
   display: block;
   color: var(--el-text-color-secondary);
   font-size: 12px;
@@ -337,7 +333,7 @@ loadDatasources()
   flex-wrap: wrap;
   gap: 12px;
 }
-.table-title {
+.object-title {
   font-size: 14px;
   font-weight: 500;
   color: var(--el-text-color-primary);

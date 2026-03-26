@@ -84,7 +84,7 @@ const form = ref<Partial<DatasourceConfig>>({
   port: 3306,
   databaseName: '',
   username: '',
-  password: ''
+  password: undefined
 })
 
 const rules: FormRules = {
@@ -106,13 +106,13 @@ const loadList = async () => {
 
 const handleAdd = () => {
   isEdit.value = false
-  form.value = { name: '', type: 'MYSQL', host: '', port: 3306, databaseName: '', username: '', password: '' }
+  form.value = { name: '', type: 'MYSQL', host: '', port: 3306, databaseName: '', username: '', password: undefined }
   dialogVisible.value = true
 }
 
 const handleEdit = (row: DatasourceConfig) => {
   isEdit.value = true
-  form.value = { ...row, password: '' }
+  form.value = { ...row, password: undefined }
   dialogVisible.value = true
 }
 
@@ -128,8 +128,9 @@ const handleSubmit = async () => {
     }
     dialogVisible.value = false
     loadList()
-  } catch (e: any) {
-    ElMessage.error(e?.message || '操作失败')
+  } catch (e: unknown) {
+    const msg = (e as Error)?.message || '操作失败'
+    ElMessage.error(msg)
   }
 }
 
@@ -148,8 +149,9 @@ const handleDelete = async (row: DatasourceConfig) => {
     await removeDatasource(row.id!)
     ElMessage.success('删除成功')
     loadList()
-  } catch (e: any) {
-    ElMessage.error(e?.message || '删除失败')
+  } catch (e: unknown) {
+    const msg = (e as Error)?.message || '删除失败'
+    ElMessage.error(msg)
   }
 }
 

@@ -30,10 +30,10 @@ const router = createRouter({
         { path: 'metadata', name: 'Metadata', component: () => import('../views/MetadataView.vue'), meta: { title: '表结构与注释' } },
         { path: 'query', name: 'DataQuery', component: () => import('../views/DataQuery.vue'), meta: { title: '数据查询' } },
         {
-          path: 'common-sql',
-          name: 'CommonSqlManage',
-          component: () => import('../views/CommonSqlManage.vue'),
-          meta: { title: '常用 SQL 管理' },
+          path: 'common-stat',
+          name: 'CommonStatManage',
+          component: () => import('../views/CommonStatManage.vue'),
+          meta: { title: '常用查询管理' },
         },
         {
           path: 'users',

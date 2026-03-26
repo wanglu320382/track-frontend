@@ -6,12 +6,12 @@ import request from './request'
 export const getSchemas = (datasourceId: number) =>
   request.get<{ data: string[] }>(`/metadata/schemas/${datasourceId}`)
 
-export const getTables = (datasourceId: number, schema?: string) =>
-  request.get<{ data: { name: string; comment: string }[] }>(`/metadata/tables/${datasourceId}`, { params: schema ? { schema } : {} })
+export const getObjects = (datasourceId: number, schema?: string) =>
+  request.get<{ data: { name: string; comment: string }[] }>(`/metadata/objects/${datasourceId}`, { params: schema ? { schema } : {} })
 
-export const getColumns = (datasourceId: number, schema: string, tableName: string) =>
-  request.get<{ data: { columns?: Record<string, unknown>[] } }>(`/metadata/columns/${datasourceId}`, {
-    params: { schema, tableName },
+export const getColumns = (datasourceId: number, schema: string, objectName: string) =>
+  request.get<{ data: { objectName?: string; objectComment?: string; columns?: Record<string, unknown>[] } }>(`/metadata/columns/${datasourceId}`, {
+    params: { schema, objectName },
   })
 
 export const getRedisKeys = (datasourceId: number, pattern?: string) =>
