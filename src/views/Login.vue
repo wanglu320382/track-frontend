@@ -42,6 +42,7 @@ import { useRouter } from 'vue-router'
 import type { FormInstance, FormRules } from 'element-plus'
 import { ElMessage } from 'element-plus'
 import { login } from '@/api/auth'
+import { encrypt } from '@/utils/statCrypto'
 
 const router = useRouter()
 const formRef = ref<FormInstance>()
@@ -117,11 +118,17 @@ const rules: FormRules = {
 
 const handleLogin = async () => {
   await formRef.value?.validate()
+  const rawPassword = form.value.password
+  if (!rawPassword) {
+    ElMessage.error('请输入密码')
+    return
+  }
   loading.value = true
   try {
+    const encryptedPassword = await encrypt(rawPassword)
     const res = await login({
       username: form.value.username,
-      password: form.value.password ?? '',
+      password: encryptedPassword,
     })
     const data = res.data
     localStorage.setItem('auth_token', data.token)
