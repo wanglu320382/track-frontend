@@ -1,1 +1,0 @@
-import{y as m}from"./index-DDATQjXO.js";const n=o=>m.get("/commonSql/list",{params:o!=null?{datasourceId:o}:void 0}),s=o=>m.post("/commonSql",o),e=(o,l)=>m.put(`/commonSql/${o}`,l),c=o=>m.delete(`/commonSql/${o}`);export{s as c,c as d,n as l,e as u};
