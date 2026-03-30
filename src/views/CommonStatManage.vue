@@ -28,7 +28,7 @@
         </el-form-item>
       </el-form>
 
-      <el-table :data="pagedList" stripe border style="width: 100%" v-loading="loading">
+      <el-table :data="list" stripe border style="width: 100%" v-loading="loading">
         <el-table-column label="数据源" width="180">
           <template #default="{ row }">
             {{ getDatasourceName(row.datasourceId) }}
@@ -60,7 +60,9 @@
           v-model:page-size="page.size"
           :page-sizes="[10, 20, 50, 100]"
           layout="total, sizes, prev, pager, next, jumper"
-          :total="filteredList.length"
+          :total="total"
+          @current-change="onPageChange"
+          @size-change="onSizeChange"
         />
       </div>
     </el-card>
@@ -98,15 +100,16 @@
 </template>
 
 <script setup lang="ts">
-import { computed, onMounted, reactive, ref, watch } from 'vue'
+import { onMounted, reactive, ref } from 'vue'
 import { ElMessage, ElMessageBox } from 'element-plus'
-import { createCommonStat, deleteCommonStat, listCommonStat, updateCommonStat, type CommonStatItem } from '@/api/commonStat'
+import { createCommonStat, deleteCommonStat, pageCommonStat, updateCommonStat, type CommonStatItem } from '@/api/commonStat'
 import { listDatasources } from '@/api/datasource'
 import type { DatasourceConfig } from '@/types/datasource'
 
 const list = ref<CommonStatItem[]>([])
 const loading = ref(false)
 const datasources = ref<DatasourceConfig[]>([])
+const total = ref(0)
 const queryForm = reactive({
   datasourceId: null as number | null,
   keyword: ''
@@ -128,31 +131,19 @@ const form = reactive({
   statText: ''
 })
 
-const filteredList = computed(() => {
-  const keyword = queryForm.keyword.trim().toLowerCase()
-  if (!keyword) return list.value
-  return list.value.filter((item) => {
-    const title = item.title?.toLowerCase() || ''
-    const description = item.description?.toLowerCase() || ''
-    const statText = item.statText?.toLowerCase() || ''
-    return title.includes(keyword) || description.includes(keyword) || statText.includes(keyword)
-  })
-})
-
-const pagedList = computed(() => {
-  const start = (page.current - 1) * page.size
-  const end = start + page.size
-  return filteredList.value.slice(start, end)
-})
-
 const loadList = async () => {
   loading.value = true
   try {
-    const res = await listCommonStat(queryForm.datasourceId)
-    list.value = res.data || []
+    const res = await pageCommonStat({
+      datasourceId: queryForm.datasourceId,
+      keyword: queryForm.keyword,
+      pageNum: page.current,
+      pageSize: page.size
+    })
+    list.value = res.data?.records || []
+    total.value = res.data?.total || 0
   } catch (e: unknown) {
-    const msg = (e as Error)?.message || '加载失败'
-    ElMessage.error(msg)
+    ElMessage.error((e as Error)?.message || '加载失败，请稍后重试')
   } finally {
     loading.value = false
   }
@@ -169,23 +160,6 @@ const handleReset = async () => {
   page.current = 1
   await loadList()
 }
-
-watch(
-  () => filteredList.value.length,
-  (total) => {
-    const maxPage = Math.max(1, Math.ceil(total / page.size))
-    if (page.current > maxPage) {
-      page.current = maxPage
-    }
-  }
-)
-
-watch(
-  () => page.size,
-  () => {
-    page.current = 1
-  }
-)
 
 const loadDatasources = async () => {
   try {
@@ -290,6 +264,17 @@ onMounted(() => {
   loadDatasources()
   loadList()
 })
+
+const onPageChange = async (cur: number) => {
+  page.current = cur
+  await loadList()
+}
+
+const onSizeChange = async (size: number) => {
+  page.size = size
+  page.current = 1
+  await loadList()
+}
 </script>
 
 <style scoped>
