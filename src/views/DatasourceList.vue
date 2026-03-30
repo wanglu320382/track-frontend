@@ -46,9 +46,20 @@
         <el-form-item label="端口" prop="port">
           <el-input-number v-model="form.port" :min="1" :max="65535" style="width: 100%" />
         </el-form-item>
-        <el-form-item label="数据库" prop="databaseName" v-if="form.type !== 'REDIS'">
-          <el-input v-model="form.databaseName" placeholder="数据库名 / schema" />
-        </el-form-item>
+        <template v-if="form.type !== 'REDIS'">
+          <el-form-item v-if="form.type === 'ORACLE'" label="连接方式">
+            <el-radio-group v-model="form.oracleConnectMode">
+              <el-radio value="SID">SID</el-radio>
+              <el-radio value="SERVICE_NAME">Service Name</el-radio>
+            </el-radio-group>
+          </el-form-item>
+          <el-form-item :label="oracleDbLabel" prop="databaseName">
+            <el-input
+              v-model="form.databaseName"
+              :placeholder="oracleDbPlaceholder"
+            />
+          </el-form-item>
+        </template>
         <el-form-item label="用户名" prop="username" v-if="form.type !== 'REDIS'">
           <el-input v-model="form.username" placeholder="用户名" />
         </el-form-item>
@@ -65,7 +76,7 @@
 </template>
 
 <script setup lang="ts">
-import { ref, onMounted } from 'vue'
+import { ref, onMounted, computed, watch } from 'vue'
 import { ElMessage, ElMessageBox } from 'element-plus'
 import { Plus } from '@element-plus/icons-vue'
 import type { FormInstance, FormRules } from 'element-plus'
@@ -83,9 +94,33 @@ const form = ref<Partial<DatasourceConfig>>({
   host: '',
   port: 3306,
   databaseName: '',
+  oracleConnectMode: 'SID',
   username: '',
   password: undefined
 })
+
+const oracleDbLabel = computed(() => {
+  if (form.value.type === 'ORACLE') {
+    return form.value.oracleConnectMode === 'SERVICE_NAME' ? 'Service Name' : 'SID'
+  }
+  return '数据库'
+})
+
+const oracleDbPlaceholder = computed(() => {
+  if (form.value.type === 'ORACLE') {
+    return form.value.oracleConnectMode === 'SERVICE_NAME' ? '如 ORCLPDB1 或 pdb.example.com' : '如 XE、ORCL'
+  }
+  return '数据库名 / schema'
+})
+
+watch(
+  () => form.value.type,
+  (t) => {
+    if (t === 'ORACLE' && (form.value.oracleConnectMode == null || form.value.oracleConnectMode === '')) {
+      form.value.oracleConnectMode = 'SID'
+    }
+  }
+)
 
 const rules: FormRules = {
   name: [{ required: true, message: '请输入名称', trigger: 'blur' }],
@@ -106,13 +141,26 @@ const loadList = async () => {
 
 const handleAdd = () => {
   isEdit.value = false
-  form.value = { name: '', type: 'MYSQL', host: '', port: 3306, databaseName: '', username: '', password: undefined }
+  form.value = {
+    name: '',
+    type: 'MYSQL',
+    host: '',
+    port: 3306,
+    databaseName: '',
+    oracleConnectMode: 'SID',
+    username: '',
+    password: undefined
+  }
   dialogVisible.value = true
 }
 
 const handleEdit = (row: DatasourceConfig) => {
   isEdit.value = true
-  form.value = { ...row, password: undefined }
+  form.value = {
+    ...row,
+    password: undefined,
+    oracleConnectMode: row.type === 'ORACLE' ? row.oracleConnectMode ?? 'SID' : row.oracleConnectMode
+  }
   dialogVisible.value = true
 }
 
