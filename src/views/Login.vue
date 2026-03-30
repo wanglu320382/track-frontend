@@ -42,7 +42,7 @@ import { useRouter } from 'vue-router'
 import type { FormInstance, FormRules } from 'element-plus'
 import { ElMessage } from 'element-plus'
 import { login } from '@/api/auth'
-import { encrypt } from '@/utils/statCrypto'
+import { encryptStat } from '@/utils/statEncrypt'
 
 const router = useRouter()
 const formRef = ref<FormInstance>()
@@ -125,7 +125,11 @@ const handleLogin = async () => {
   }
   loading.value = true
   try {
-    const encryptedPassword = await encrypt(rawPassword)
+    const encryptedPassword = encryptStat(rawPassword)
+    if (!encryptedPassword) {
+      ElMessage.error('加密配置异常，请检查环境变量 VITE_TRACK_STAT_AES_KEY / VITE_TRACK_STAT_AES_IV')
+      return
+    }
     const res = await login({
       username: form.value.username,
       password: encryptedPassword,

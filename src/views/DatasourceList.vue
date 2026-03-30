@@ -116,7 +116,7 @@ const oracleDbPlaceholder = computed(() => {
 watch(
   () => form.value.type,
   (t) => {
-    if (t === 'ORACLE' && (form.value.oracleConnectMode == null || form.value.oracleConnectMode === '')) {
+    if (t === 'ORACLE' && form.value.oracleConnectMode == null) {
       form.value.oracleConnectMode = 'SID'
     }
   }
