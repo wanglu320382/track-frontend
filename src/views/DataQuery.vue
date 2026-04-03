@@ -426,45 +426,48 @@ const runQuery = async (tab: SqlQueryTab) => {
     return
   }
   const savedSelection = captureStatTextareaSelection(tab)
-  const statTrim = resolveEffectiveStat(tab)
-  if (!statTrim) {
-    if (objectName.value) {
-      await runObjectQuery(tab)
+  try {
+    const statTrim = resolveEffectiveStat(tab)
+    if (!statTrim) {
+      if (objectName.value) {
+        await runObjectQuery(tab)
+        return
+      }
+      ElMessage.warning('请输入查询语句或选择表')
       return
     }
-    ElMessage.warning('请输入查询语句或选择表')
-    return
-  }
-  if (!statTrim.toUpperCase().startsWith('SELECT')) {
-    ElMessage.warning('仅支持 SELECT 查询')
-    return
-  }
-  loadingTabId.value = tab.id
-  tab.result = null
-  tab.errorMsg = ''
-  tab.currentPage = 1
-  tab.lastExecutedStat = statTrim
-  tab.lastQueryMode = 'stat'
-  try {
-    const encryptedStat = encryptStat(statTrim)
-    const res = await executeStat(datasourceId.value, {
-      schema: currentSchema.value || undefined,
-      stat: encryptedStat ? undefined : statTrim,
-      encryptedStat,
-      page: 1,
-      size: tab.pageSize
-    })
-    tab.result = res.data
-    const parsed = parseObjectFromStat(statTrim)
-    const schema = parsed?.schema?.trim() || currentSchema.value || ''
-    const obj = parsed?.objectName ?? null
-    await loadColumnComments(tab, datasourceId.value, schema, obj, res.data.columns)
-  } catch (e: unknown) {
-    const msg = getSafeErrorMessage(e, '查询失败，请稍后重试')
-    tab.errorMsg = msg
-    ElMessage.error(msg)
+    if (!statTrim.toUpperCase().startsWith('SELECT')) {
+      ElMessage.warning('仅支持 SELECT 查询')
+      return
+    }
+    loadingTabId.value = tab.id
+    tab.result = null
+    tab.errorMsg = ''
+    tab.currentPage = 1
+    tab.lastExecutedStat = statTrim
+    tab.lastQueryMode = 'stat'
+    try {
+      const encryptedStat = encryptStat(statTrim)
+      const res = await executeStat(datasourceId.value, {
+        schema: currentSchema.value || undefined,
+        stat: encryptedStat ? undefined : statTrim,
+        encryptedStat,
+        page: 1,
+        size: tab.pageSize
+      })
+      tab.result = res.data
+      const parsed = parseObjectFromStat(statTrim)
+      const schema = parsed?.schema?.trim() || currentSchema.value || ''
+      const obj = parsed?.objectName ?? null
+      await loadColumnComments(tab, datasourceId.value, schema, obj, res.data.columns)
+    } catch (e: unknown) {
+      const msg = getSafeErrorMessage(e, '查询失败，请稍后重试')
+      tab.errorMsg = msg
+      ElMessage.error(msg)
+    } finally {
+      loadingTabId.value = null
+    }
   } finally {
-    loadingTabId.value = null
     restoreStatTextareaSelection(tab, savedSelection)
   }
 }

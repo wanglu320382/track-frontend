@@ -21,6 +21,10 @@
           <el-icon><Document /></el-icon>
           <span>表结构与元数据</span>
         </el-menu-item>
+        <el-menu-item index="/json-parse">
+          <el-icon><Document /></el-icon>
+          <span>json解析</span>
+        </el-menu-item>
         <el-menu-item index="/query">
           <el-icon><Search /></el-icon>
           <span>数据查询</span>

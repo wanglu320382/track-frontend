@@ -42,7 +42,10 @@
           <template v-if="columns.length">
             <div class="detail-header">
               <span class="object-title">{{ selectedObject }} 表结构</span>
-              <el-button type="primary" size="small" @click="goViewData">查看数据</el-button>
+              <el-button-group class="detail-actions">
+                <el-button type="primary" size="small" @click="goViewData">查看数据</el-button>
+                <el-button type="primary" size="small" plain @click="openFieldExtractDialog">字段提取</el-button>
+              </el-button-group>
             </div>
             <el-table :data="columns" stripe border>
               <el-table-column prop="columnName" label="字段名" width="160" />
@@ -85,6 +88,18 @@
         </el-descriptions-item>
       </el-descriptions>
     </el-dialog>
+
+    <el-dialog v-model="fieldExtractDialogVisible" :title="`字段提取: ${selectedObject}`" width="520px">
+      <template #default>
+        <el-empty v-if="!fieldExtractText" description="暂无字段可提取" :image-size="80" />
+        <div v-else>
+          <div class="field-extract-toolbar">
+            <el-button size="small" type="primary" @click="copyFieldExtract">复制</el-button>
+          </div>
+          <pre class="field-extract-pre">{{ fieldExtractText }}</pre>
+        </div>
+      </template>
+    </el-dialog>
   </div>
 </template>
 
@@ -112,6 +127,8 @@ const loadingRedisKeys = ref(false)
 const redisKeyDialogVisible = ref(false)
 const redisKeyViewing = ref('')
 const redisKeyDetail = ref<{ type: string; value: unknown } | null>(null)
+const fieldExtractDialogVisible = ref(false)
+const fieldExtractText = ref('')
 
 const isRedis = computed(() => {
   const ds = datasources.value.find((d) => d.id === datasourceId.value)
@@ -257,6 +274,34 @@ const goViewData = () => {
   window.open(route.href, '_blank')
 }
 
+const openFieldExtractDialog = () => {
+  if (!columns.value?.length) {
+    ElMessage.warning('暂无字段可提取')
+    return
+  }
+
+  // 按 `表名.json` 中 column 数组的展示方式输出：每行 `"字段名",`
+  const escapeForJsonString = (s: string) =>
+    s.replace(/\\/g, '\\\\').replace(/"/g, '\\"').replace(/\r?\n/g, '\\n')
+
+  const fieldNames = (columns.value || [])
+    .map((c) => (c as Record<string, unknown>).columnName)
+    .filter((n): n is string => typeof n === 'string' && n.trim().length > 0)
+
+  fieldExtractText.value = fieldNames.map((n) => `"${escapeForJsonString(n)}",`).join('\n')
+  fieldExtractDialogVisible.value = true
+}
+
+const copyFieldExtract = async () => {
+  try {
+    if (!fieldExtractText.value) return
+    await navigator.clipboard.writeText(fieldExtractText.value)
+    ElMessage.success('已复制')
+  } catch {
+    ElMessage.warning('复制失败，请手动选择复制')
+  }
+}
+
 watch(datasourceId, () => onDatasourceChange())
 
 loadDatasources()
@@ -328,6 +373,10 @@ loadDatasources()
   display: flex;
   align-items: center;
   justify-content: space-between;
+  gap: 12px;
+}
+.detail-header .detail-actions {
+  flex-shrink: 0;
 }
 .detail-header.redis-header {
   flex-wrap: wrap;
@@ -350,6 +399,23 @@ loadDatasources()
   border-radius: 4px;
   font-size: 13px;
   max-height: 300px;
+  overflow: auto;
+  white-space: pre-wrap;
+  word-break: break-all;
+}
+
+.field-extract-toolbar {
+  display: flex;
+  justify-content: flex-end;
+  margin-bottom: 8px;
+}
+.field-extract-pre {
+  margin: 0;
+  padding: 12px;
+  background: var(--el-fill-color-light);
+  border-radius: 4px;
+  font-size: 13px;
+  max-height: 420px;
   overflow: auto;
   white-space: pre-wrap;
   word-break: break-all;

@@ -28,6 +28,7 @@ const router = createRouter({
       children: [
         { path: 'datasource', name: 'Datasource', component: () => import('../views/DatasourceList.vue'), meta: { title: '数据源管理' } },
         { path: 'metadata', name: 'Metadata', component: () => import('../views/MetadataView.vue'), meta: { title: '表结构与注释' } },
+        { path: 'json-parse', name: 'JsonParse', component: () => import('../views/JsonParseView.vue'), meta: { title: 'json解析' } },
         { path: 'query', name: 'DataQuery', component: () => import('../views/DataQuery.vue'), meta: { title: '数据查询' } },
         {
           path: 'common-stat',
