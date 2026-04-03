@@ -155,6 +155,10 @@ onMounted(() => {
 .main {
   background: #f5f7fa;
   padding: 20px;
+  height: 100%;
+  min-height: 0;
+  display: flex;
+  flex-direction: column;
 }
 .fade-enter-active,
 .fade-leave-active {

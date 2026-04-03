@@ -80,7 +80,13 @@
       </div>
     </el-card>
 
-    <el-dialog v-model="redisKeyDialogVisible" :title="`Key: ${redisKeyViewing}`" width="560px">
+    <el-dialog
+      v-model="redisKeyDialogVisible"
+      class="redis-key-dialog"
+      :title="`Key: ${redisKeyViewing}`"
+      width="700px"
+      top="6vh"
+    >
       <el-descriptions v-if="redisKeyDetail" :column="1" border>
         <el-descriptions-item label="类型">{{ redisKeyDetail.type }}</el-descriptions-item>
         <el-descriptions-item label="值">
@@ -89,12 +95,18 @@
       </el-descriptions>
     </el-dialog>
 
-    <el-dialog v-model="fieldExtractDialogVisible" :title="`字段提取: ${selectedObject}`" width="520px">
+    <el-dialog
+      v-model="fieldExtractDialogVisible"
+      class="field-extract-dialog"
+      :title="`字段提取: ${selectedObject}`"
+      width="760px"
+      top="6vh"
+    >
       <template #default>
         <el-empty v-if="!fieldExtractText" description="暂无字段可提取" :image-size="80" />
         <div v-else>
           <div class="field-extract-toolbar">
-            <el-button size="small" type="primary" @click="copyFieldExtract">复制</el-button>
+            <el-button type="primary" @click="copyFieldExtract">复制</el-button>
           </div>
           <pre class="field-extract-pre">{{ fieldExtractText }}</pre>
         </div>
@@ -394,11 +406,12 @@ loadDatasources()
 }
 .redis-value-pre {
   margin: 0;
-  padding: 12px;
+  padding: 14px;
   background: var(--el-fill-color-light);
   border-radius: 4px;
-  font-size: 13px;
-  max-height: 300px;
+  font-size: 14px;
+  line-height: 1.6;
+  max-height: 520px;
   overflow: auto;
   white-space: pre-wrap;
   word-break: break-all;
@@ -411,13 +424,29 @@ loadDatasources()
 }
 .field-extract-pre {
   margin: 0;
-  padding: 12px;
+  padding: 16px;
   background: var(--el-fill-color-light);
   border-radius: 4px;
-  font-size: 13px;
-  max-height: 420px;
+  font-size: 15px;
+  line-height: 1.6;
+  max-height: 650px;
   overflow: auto;
   white-space: pre-wrap;
   word-break: break-all;
+}
+
+/* 让弹窗标题/正文在“大屏内容”下更清晰 */
+.metadata-view :deep(.el-dialog__title) {
+  font-size: 16px;
+}
+.metadata-view :deep(.redis-key-dialog .el-dialog__body),
+.metadata-view :deep(.field-extract-dialog .el-dialog__body) {
+  padding: 22px 26px;
+}
+.metadata-view :deep(.redis-key-dialog .el-descriptions__label) {
+  font-size: 14px;
+}
+.metadata-view :deep(.redis-key-dialog .el-descriptions__content) {
+  font-size: 14px;
 }
 </style>
