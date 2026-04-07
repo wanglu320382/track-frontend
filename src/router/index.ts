@@ -37,6 +37,12 @@ const router = createRouter({
           meta: { title: '常用查询管理' },
         },
         {
+          path: 'optimization-suggestion',
+          name: 'OptimizationSuggestion',
+          component: () => import('../views/OptimizationSuggestionManage.vue'),
+          meta: { title: '优化建议' },
+        },
+        {
           path: 'users',
           name: 'UserManage',
           component: () => import('../views/UserManage.vue'),

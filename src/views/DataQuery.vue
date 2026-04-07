@@ -72,8 +72,9 @@
                   @keydown.ctrl.enter="runQuery(tab)"
                 />
                 <div class="btn-group">
-                  <el-button type="primary" @click="runQuery(tab)" :loading="loadingTabId === tab.id" class="execute-btn">执行</el-button>
-                  <el-button type="success" :disabled="!objectName" @click="runObjectQuery(tab)" :loading="loadingTabId === tab.id">浏览表数据</el-button>
+                  <!-- mousedown.prevent：避免按钮抢焦点导致 textarea 选区在 click 前被清空，配合 runQuery 内 capture/restore 保留高亮 -->
+                  <el-button type="primary" class="execute-btn" :loading="loadingTabId === tab.id" @mousedown.prevent @click="runQuery(tab)">执行</el-button>
+                  <el-button type="success" :disabled="!objectName" :loading="loadingTabId === tab.id" @mousedown.prevent @click="runObjectQuery(tab)">浏览表数据</el-button>
                 </div>
               </div>
               <el-alert v-if="tab.errorMsg" type="error" :title="tab.errorMsg" show-icon closable class="error-alert" @close="tab.errorMsg = ''" />

@@ -33,6 +33,10 @@
           <el-icon><Document /></el-icon>
           <span>常用查询管理</span>
         </el-menu-item>
+        <el-menu-item index="/optimization-suggestion">
+          <el-icon><ChatDotRound /></el-icon>
+          <span>优化建议</span>
+        </el-menu-item>
         <el-menu-item v-if="currentUserRole === 'ADMIN'" index="/users">
           <el-icon><User /></el-icon>
           <span>用户管理</span>
@@ -62,7 +66,7 @@
 import { computed, onMounted } from 'vue'
 import { useRoute, useRouter } from 'vue-router'
 import { ElMessage } from 'element-plus'
-import { House, Connection, Document, Search, User } from '@element-plus/icons-vue'
+import { House, Connection, Document, Search, User, ChatDotRound } from '@element-plus/icons-vue'
 
 const route = useRoute()
 const router = useRouter()
