@@ -49,7 +49,7 @@
                   clearable
                   filterable
                   style="width: 260px"
-                  @change="(id) => onSelectCommonStat(tab, id)"
+                  @change="onCommonStatChange(tab, $event)"
                 >
                   <el-option
                     v-for="item in commonStatList"
@@ -148,7 +148,7 @@
 </template>
 
 <script setup lang="ts">
-import { ref, computed, reactive, onMounted, nextTick } from 'vue'
+import { ref, computed, reactive, onMounted, nextTick, type ComponentPublicInstance } from 'vue'
 import { useRoute, useRouter } from 'vue-router'
 import { ElMessage, ElInput } from 'element-plus'
 import { Plus } from '@element-plus/icons-vue'
@@ -204,9 +204,9 @@ const loadingTabId = ref<string | null>(null)
 /** 每个查询页面对应的 el-input 实例，用于读取选区 */
 const statInputRefs = ref<Record<string, InstanceType<typeof ElInput> | null>>({})
 
-const setStatInputRef = (tabId: string, el: InstanceType<typeof ElInput> | null) => {
+const setStatInputRef = (tabId: string, el: Element | ComponentPublicInstance | null) => {
   if (el) {
-    statInputRefs.value[tabId] = el
+    statInputRefs.value[tabId] = el as InstanceType<typeof ElInput>
   } else {
     delete statInputRefs.value[tabId]
   }
@@ -289,6 +289,8 @@ const isRedis = computed(() => {
 })
 const redisKey = ref('')
 const redisResult = ref<unknown>(null)
+/** Redis 查询错误提示（与 SQL 页的 tab.errorMsg 分离） */
+const errorMsg = ref('')
 
 const commonStatList = ref<CommonStatItem[]>([])
 const saveDialogVisible = ref(false)
@@ -542,6 +544,10 @@ const onSelectCommonStat = (tab: SqlQueryTab, id: number | null | undefined) => 
   if (item) {
     tab.stat = item.statText
   }
+}
+
+const onCommonStatChange = (tab: SqlQueryTab, val: number | null | undefined) => {
+  onSelectCommonStat(tab, val)
 }
 
 const saveDialogSourceTab = ref<SqlQueryTab | null>(null)
