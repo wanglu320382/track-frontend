@@ -85,7 +85,7 @@
             v-model="form.statText"
             type="textarea"
             :rows="10"
-            placeholder="请输入要保存的查询语句，只支持 SELECT"
+            placeholder="请输入要保存的查询语句"
           />
         </el-form-item>
       </el-form>
@@ -208,10 +208,6 @@ const submit = async () => {
   }
   if (!statTrim) {
     ElMessage.warning('请输入查询语句')
-    return
-  }
-  if (!statTrim.toUpperCase().startsWith('SELECT')) {
-    ElMessage.warning('仅支持 SELECT 查询')
     return
   }
   saving.value = true

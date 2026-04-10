@@ -58,7 +58,15 @@
                     :value="item.id"
                   />
                 </el-select>
-                <el-button type="primary" link @click="openSaveDialog(tab)">保存为常用</el-button>
+                <el-button type="primary" link @click="openSaveDialog(tab)">新增</el-button>
+                <el-button
+                  type="primary"
+                  link
+                  :loading="updatingCommonStatTabId === tab.id"
+                  @click="updateSelectedCommonStat(tab)"
+                >
+                  更新
+                </el-button>
                 <el-button type="primary" link @click="goCommonStatManage">常用查询管理</el-button>
               </div>
               <div class="stat-row">
@@ -124,7 +132,7 @@
           </div>
         </template>
       </div>
-      <el-dialog v-model="saveDialogVisible" title="保存为常用查询" width="480px">
+      <el-dialog v-model="saveDialogVisible" title="新增常用查询" width="480px">
         <el-form :model="saveForm" label-width="80px">
           <el-form-item label="数据源">
             <el-input :model-value="saveForm.datasourceLabel" disabled placeholder="当前数据源" />
@@ -155,7 +163,7 @@ import { Plus } from '@element-plus/icons-vue'
 import { listDatasources } from '@/api/datasource'
 import { getSchemas, getObjects, getColumns } from '@/api/metadata'
 import { executeStat, queryObject, getRedisValue } from '@/api/dataQuery'
-import { listCommonStat, createCommonStat, type CommonStatItem } from '@/api/commonStat'
+import { listCommonStat, createCommonStat, updateCommonStat, type CommonStatItem } from '@/api/commonStat'
 import type { DatasourceConfig } from '@/types/datasource'
 import { encryptStat } from '@/utils/statEncrypt'
 
@@ -295,6 +303,8 @@ const errorMsg = ref('')
 const commonStatList = ref<CommonStatItem[]>([])
 const saveDialogVisible = ref(false)
 const savingCommonStat = ref(false)
+/** 正在执行「更新常用」的 tab id，用于按钮 loading */
+const updatingCommonStatTabId = ref<string | null>(null)
 const saveForm = reactive({
   datasourceId: null as number | null,
   datasourceLabel: '',
@@ -569,6 +579,46 @@ const openSaveDialog = (tab: SqlQueryTab) => {
   saveForm.description = ''
   saveDialogSourceTab.value = tab
   saveDialogVisible.value = true
+}
+
+/** 用当前编辑框中的 SQL 覆盖下拉框已选中的常用查询 */
+const updateSelectedCommonStat = async (tab: SqlQueryTab) => {
+  const statTrim = tab.stat.trim()
+  if (!statTrim) {
+    ElMessage.warning('请输入要保存的内容')
+    return
+  }
+  if (!datasourceId.value) {
+    ElMessage.warning('请先选择数据源')
+    return
+  }
+  const id = tab.selectedCommonStatId
+  if (id == null) {
+    ElMessage.warning('请先在「选择常用查询」下拉框中选择要更新的条目')
+    return
+  }
+  const item = commonStatList.value.find((it) => it.id === id)
+  if (!item) {
+    ElMessage.warning('所选常用查询已不存在，请重新选择')
+    await loadCommonStat()
+    return
+  }
+  updatingCommonStatTabId.value = tab.id
+  try {
+    await updateCommonStat(id, {
+      datasourceId: item.datasourceId ?? undefined,
+      title: item.title,
+      statText: statTrim,
+      description: item.description?.trim() ? item.description : undefined
+    })
+    ElMessage.success('已更新')
+    await loadCommonStat()
+  } catch (e: unknown) {
+    const msg = getSafeErrorMessage(e, '更新失败，请稍后重试')
+    ElMessage.error(msg)
+  } finally {
+    updatingCommonStatTabId.value = null
+  }
 }
 
 const submitSaveCommonStat = async () => {
